@@ -31,12 +31,12 @@ nmap -sC -sV 10.114.153.43
 
 **Open ports:**
 
-| Port | Service | Version                |
-|------|---------|------------------------|
-| 22   | SSH     | OpenSSH 8.2p1 Ubuntu   |
-| 80   | HTTP    | Apache httpd 2.4.41    |
+| Port | Service | Version              |
+|------|---------|----------------------|
+| 22   | SSH     | OpenSSH 8.2p1 Ubuntu |
+| 80   | HTTP    | Apache httpd 2.4.41  |
 
-The HTTP title reveals a **SPIP CMS** instance.
+The HTTP title reveals a **SPIP CMS** instance: `Publisher's Pulse: SPIP Insights & Tips`.
 
 ---
 
@@ -45,6 +45,8 @@ The HTTP title reveals a **SPIP CMS** instance.
 ### Homepage
 
 ![Homepage](screenshots/02-homepage.png)
+
+A typical SPIP-based blog: "Community Magazine".
 
 ### Directory fuzzing
 
@@ -71,6 +73,8 @@ Composed-By: SPIP @ www.spip.net + spip(4.2.0),aide(3.1.0),archiviste(2.2.0),...
 ### Login page
 
 ![Login](screenshots/05-login.png)
+
+Standard SPIP login form. No brute-force — we go straight for the CVE.
 
 ---
 
@@ -118,7 +122,7 @@ uid=33(www-data) gid=33(www-data) groups=33(www-data)
 **User flag:**
 
 ```
-fa2290
+fa229046d44eda6a3598c73ad96f4ca5
 ```
 
 ---
@@ -134,7 +138,7 @@ cat id_rsa
 
 ![SSH key](screenshots/09-ssh-key.png)
 
-The private SSH key of user `think` is readable by `www-data`.
+The private SSH key of user `think` is readable by `www-data`. Classic secret exposure.
 
 ### SSH login
 
@@ -204,8 +208,7 @@ uid=1000(think) gid=1000(think) euid=0(root) egid=0(root)
 **Root flag:**
 
 ```
-3a4225.....
-
+3a4225cc9e85709adda6ef55d6a4f2ca
 ```
 
 ---
@@ -214,13 +217,13 @@ uid=1000(think) gid=1000(think) euid=0(root) egid=0(root)
 
 ### Vulnerabilities
 
-| # | Vulnerability                              | Type                  | Severity |
-|---|--------------------------------------------|-----------------------|----------|
-| 1 | SPIP 4.2.0 outdated                        | Outdated software     | Critical |
-| 2 | `Composed-By` header leaks version         | Information disclosure| Medium   |
-| 3 | SSH private key readable by `www-data`     | Secret exposure       | High     |
-| 4 | SUID `run_container` + world-writable script | Unsafe SUID         | Critical |
-| 5 | AppArmor bypass via shell swap             | Weak MAC config       | High     |
+| # | Vulnerability                                | Type                   | Severity |
+|---|----------------------------------------------|------------------------|----------|
+| 1 | SPIP 4.2.0 outdated                          | Outdated software      | Critical |
+| 2 | `Composed-By` header leaks version           | Information disclosure | Medium   |
+| 3 | SSH private key readable by `www-data`       | Secret exposure        | High     |
+| 4 | SUID `run_container` + world-writable script | Unsafe SUID            | Critical |
+| 5 | AppArmor bypass via shell swap               | Weak MAC config        | High     |
 
 ### Attack chain
 
@@ -256,7 +259,7 @@ chown -R think:think /home/think/.ssh
 
 ```bash
 chmod u-s /usr/sbin/run_container
-chmod 600 /opt/run_container.sh
+chmod 700 /opt/run_container.sh
 chown root:root /opt/run_container.sh
 ```
 
@@ -281,7 +284,7 @@ find / -perm -4000 -type f 2>/dev/null
 
 ### Flags
 
-| Flag | Value                                |
-|------|--------------------------------------|
-| User | `fa2290.....`   |
-| Root | `3a4225.....`   |
+| Flag | Value                              |
+|------|------------------------------------|
+| User | `fa229046d44eda6a3598c73ad96f4ca5` |
+| Root | `3a4225cc9e85709adda6ef55d6a4f2ca` |
